@@ -1,4 +1,4 @@
-Cpackage com.example.money;
+package com.example.money;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
