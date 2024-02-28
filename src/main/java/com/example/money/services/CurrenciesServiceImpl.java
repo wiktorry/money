@@ -1,7 +1,9 @@
 package com.example.money.services;
 
+import com.example.money.clients.HttpClient;
 import com.example.money.entity.Currency;
 import com.example.money.repositories.CurrencyRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -22,34 +24,18 @@ import java.util.List;
 @Service
 public class CurrenciesServiceImpl implements CurrenciesService {
     private final CurrencyRepository currencyRepository;
+    private HttpClient httpClient;
     private List<Currency> values;
-    public CurrenciesServiceImpl(CurrencyRepository currencyRepository){
+
+    public CurrenciesServiceImpl(CurrencyRepository currencyRepository, HttpClient httpClient){
         this.currencyRepository = currencyRepository;
+        this.httpClient = httpClient;
     }
+
     @Override
     @Scheduled(fixedRate = 60000)
     public void updateValues(){
-        WebClient webClient = WebClient.create();
-        WebClient.UriSpec<WebClient.RequestBodySpec> uriSpec = webClient.method(HttpMethod.GET);
-        WebClient.RequestBodySpec bodySpec = uriSpec.uri("http://api.nbp.pl/api/exchangerates/tables/a/");
-        WebClient.ResponseSpec responseSpec = bodySpec
-                .header(MediaType.APPLICATION_JSON_VALUE)
-                .accept(MediaType.APPLICATION_JSON)
-                .acceptCharset(StandardCharsets.UTF_8)
-                .ifNoneMatch("*")
-                .ifModifiedSince(ZonedDateTime.now())
-                .retrieve();
-        Mono<String> res = bodySpec.exchangeToMono(response -> {
-            if (response.statusCode().equals(HttpStatus.OK)) {
-                return response.bodyToMono(String.class);
-            }
-            else if (response.statusCode().is4xxClientError()) {
-                return Mono.just("Error response");
-            }
-            else {
-                return response.createException().flatMap(Mono::error);
-            }
-        });
+        Mono<String> response = httpClient.request(HttpMethod.GET, "http://api.nbp.pl/api/exchangerates/tables/a/");
         this.values = new ArrayList<>();
         values.add(new Currency("euro", 4.31F));
         values.add(new Currency("dollar", 3.97F));
