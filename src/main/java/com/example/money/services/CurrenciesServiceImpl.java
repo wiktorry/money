@@ -2,7 +2,9 @@ package com.example.money.services;
 
 import com.example.money.clients.HttpClient;
 import com.example.money.entity.Currency;
+import com.example.money.exceptions.CurrencyNotFoundException;
 import com.example.money.repositories.CurrencyRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -13,13 +15,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.io.Reader;
+import java.io.Serializable;
 import java.net.http.HttpRequest;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class CurrenciesServiceImpl implements CurrenciesService {
@@ -36,7 +38,6 @@ public class CurrenciesServiceImpl implements CurrenciesService {
     @Scheduled(fixedRate = 60000)
     public void updateValues(){
         Mono<String> response = httpClient.request(HttpMethod.GET, "http://api.nbp.pl/api/exchangerates/tables/a/");
-        this.values = new ArrayList<>();
         values.add(new Currency("euro", 4.31F));
         values.add(new Currency("dollar", 3.97F));
         values.add(new Currency("zloty", 1F));
@@ -45,7 +46,7 @@ public class CurrenciesServiceImpl implements CurrenciesService {
     }
     @Override
     public Float getValue(String currency){
-        Currency cur = currencyRepository.findById(currency).orElseThrow(() -> new RuntimeException("We don't have this value"));
+        Currency cur = currencyRepository.findById(currency).orElseThrow(() -> new CurrencyNotFoundException("We don't have this value in our database"));
         return cur.getValue();
     }
 }
