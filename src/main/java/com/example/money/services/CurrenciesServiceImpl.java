@@ -2,6 +2,7 @@ package com.example.money.services;
 
 import com.example.money.clients.HttpClient;
 import com.example.money.entity.Currency;
+import com.example.money.entity.CurrencyTable;
 import com.example.money.exceptions.CurrencyNotFoundException;
 import com.example.money.repositories.CurrencyRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,26 +28,28 @@ import java.util.stream.Collectors;
 public class CurrenciesServiceImpl implements CurrenciesService {
     private final CurrencyRepository currencyRepository;
     private HttpClient httpClient;
-    private List<Currency> values;
+    private List<Currency> rates;
 
     public CurrenciesServiceImpl(CurrencyRepository currencyRepository, HttpClient httpClient){
         this.currencyRepository = currencyRepository;
         this.httpClient = httpClient;
+        rates = new ArrayList<>();
     }
 
     @Override
     @Scheduled(fixedRate = 60000)
     public void updateValues(){
-        Mono<String> response = httpClient.request(HttpMethod.GET, "http://api.nbp.pl/api/exchangerates/tables/a/");
-        values.add(new Currency("euro", 4.31F));
-        values.add(new Currency("dollar", 3.97F));
-        values.add(new Currency("zloty", 1F));
-        values.forEach(currencyRepository::save);
-        System.out.println("saved");
+        Mono<CurrencyTable[]> response = httpClient.request(HttpMethod.GET, "http://api.nbp.pl/api/exchangerates/tables/a/");
+        CurrencyTable[] table = response.block();
+        if (table != null) {
+            rates = Arrays.asList(table[0].getRates());
+        }
+        for (Currency cur : rates) {
+            currencyRepository.save(cur);
+        }
     }
     @Override
-    public Float getValue(String currency){
-        Currency cur = currencyRepository.findById(currency).orElseThrow(() -> new CurrencyNotFoundException("We don't have this value in our database"));
-        return cur.getValue();
+    public Currency getCurrency(String code){
+        return currencyRepository.findById(code).orElseThrow(() -> new CurrencyNotFoundException("We don't have this rate in our database"));
     }
 }

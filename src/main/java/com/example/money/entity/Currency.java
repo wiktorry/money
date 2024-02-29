@@ -17,9 +17,11 @@ import lombok.Setter;
 @NoArgsConstructor
 public class Currency {
     @Id
+    @Column(name="code")
+    private String code;
     @Column(name="name")
-    private String name;
+    private String currency;
     @Column(name="value")
-    private float value;
+    private float mid;
 
 }

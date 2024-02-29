@@ -12,8 +12,8 @@ public class CurrencyController {
     public CurrencyController(CurrenciesService currencyService){
         this.currencyService = currencyService;
     }
-    @GetMapping("/{currency}")
-    public Float getValue(@PathVariable String currency){
-        return currencyService.getValue(currency);
+    @GetMapping("/{code}")
+    public Currency getValue(@PathVariable String code){
+        return currencyService.getCurrency(code);
     }
 }
